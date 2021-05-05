@@ -6,16 +6,14 @@ export default class FishTank extends Entity {
 	constructor(options) {
 		options.moveable = false;
 		options.angle = 0;
-		options.mass = 100;
+		options.collision_category = 0x0001;
 		super(options);
 	}
 
-	getBody() {
-		const w = 600;
-		const h = 600;
-		const b = 10;
-
-		console.log(this);
+	getBody(options) {
+		const w = options.width;
+		const h = options.height;
+		const b = options.thickness;
 
 		const body = Body.create({
 			parts: [
@@ -24,9 +22,13 @@ export default class FishTank extends Entity {
 				Bodies.rectangle(w + b / 2, h / 2, b, h), // right rect,
 				Bodies.rectangle(w / 2, h + b / 2, h, b),
 			],
-		})
+			render: {
+				fillStyle: 'blue',
+				strokeStyle: 'blue',
+				lineWidth: 5,
+			},
+		});
 
-		console.log(body);
 		return body;
 	}
 }

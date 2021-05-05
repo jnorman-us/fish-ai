@@ -1,6 +1,13 @@
-import { Engine, Render, Vector, World } from 'matter-js';
+import { Engine, Events, Render, Vector, World } from 'matter-js';
 
+import delay from './utils/delay.js';
+import random from './utils/random.js';
+
+import Fish from './entities/fish.js';
 import FishTank from './entities/fish-tank.js';
+import Food from './entities/food.js';
+
+import fishFoodCollisionListener from './listeners/fish-food-collision.js';
 
 export default class Simulation {
 	constructor() {
@@ -9,17 +16,67 @@ export default class Simulation {
 		this.world = this.engine.world;
 
 		this.fish_tank = new FishTank({
-			position: { x: 320, y: 320 },
+			width: 600,
+			height: 600,
+			thickness: 10,
+			position: { x: 300, y: 300 },
 		});
 		this.fish_tank.addTo(this.world);
+
+		this.registerListeners();
 	}
 
-	start() {
-		this.engine_runner = setInterval(this.tick.bind(this), 100);
+	async start() {
+		this.engine_runner = setInterval(this.tick.bind(this), 30);
+
+		for(var gen = 0; true; gen ++) {
+			// generate the food and the fish
+			this.fishes = [];
+			this.foods = [];
+
+			for(var i = 0; i < 10; i ++) {
+				const fish = new Fish({
+					position: {
+						x: random(0, 600),
+						y: random(200, 400),
+					},
+					angle: random(0, Math.PI * 2),
+				});
+				fish.setFoods(this.foods);
+				fish.addTo(this.world);
+				this.fishes.push(fish);
+			}
+
+			for(var i = 0; i < 20; i ++) {
+				await delay(200);
+
+				const food = new Food({
+					position: {
+						x: random(0, 600),
+						y: 10,
+					}
+				});
+				food.addTo(this.world);
+				this.foods.push(food);
+			}
+
+			await delay(5000);
+
+			for(const fish of this.fishes) {
+				fish.removeFrom();
+			}
+			for(const food of this.foods) {
+				food.removeFrom();
+			}
+		}
 	}
 
 	tick() {
-		Engine.update(this.engine, 100);
+		Engine.update(this.engine, 30);
+
+		for(const fish of this.fishes) {
+			fish.tick();
+		}
 	}
 
 	stop() {
@@ -35,7 +92,7 @@ export default class Simulation {
 			element: this.element,
 			engine: this.engine,
 			options: {
-				wireframes: true,
+				wireframes: false,
 				width: width,
 				height: height,
 			}
@@ -50,5 +107,11 @@ export default class Simulation {
 		this.element.removeChild(this.render.canvas);
 		this.element = null;
 		this.render = null;
+	}
+
+	registerListeners() {
+		Events.on(this.engine, "collisionStart", function(e) {
+			fishFoodCollisionListener(e, this);
+		});
 	}
 }
