@@ -28,6 +28,12 @@ export default class Fish extends Entity {
 
 		this.foods = null;
 		this.eaten = 0;
+		this.grazed = 0;
+		this.crashed = 0;
+	}
+
+	crash() {
+		this.crashed ++;
 	}
 
 	eat() {
@@ -40,9 +46,13 @@ export default class Fish extends Entity {
 
 	tick() {
 		var closest_food = null;
-		for(const food of this.foods) {
-			closest_food = food;
-			break;
+
+		if(this.foods.length == 1)
+			closest_food = this.foods[0];
+		const distance = Vector.magnitude(Vector.sub(closest_food.position, this.position));
+
+		if(distance < 100) {
+			this.grazed ++;
 		}
 
 		const delta_v = Vector.sub(this.position, closest_food != null
@@ -70,12 +80,22 @@ export default class Fish extends Entity {
 	getBody(options) {
 		const body = Body.create({
 			parts: [
-				Bodies.circle(-7.5, 0, 10),
-				Bodies.polygon(7.5, 0, 3, 10),
+				Bodies.circle(-10, 0, 15),
+				Bodies.polygon(10, 0, 3, 15),
 			],
 		});
 
 		return body;
+	}
+
+	reset() {
+		this.eaten = 0;
+		this.grazed = 0;
+		this.crashed = 0;
+	}
+
+	get score() {
+		return this.eaten * 200 + this.grazed * 5 - this.crashed * 100;
 	}
 
 	static generateBrain() {

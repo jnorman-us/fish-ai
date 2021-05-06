@@ -1,6 +1,8 @@
-import { Bodies, Engine } from 'matter-js'
+import { Bodies, Body, Engine } from 'matter-js'
 
 import Entity from './entity.js';
+
+import random from '../utils/random.js';
 
 export default class Food extends Entity {
 	constructor(options) {
@@ -11,6 +13,13 @@ export default class Food extends Entity {
 	}
 
 	getBody(options) {
-		return Bodies.polygon(0, 0, 5, 5);
+		return Bodies.circle(0, 0, 20);
+	}
+
+	respawn() {
+		Body.setPosition(this.body, {
+			x: random(0, 600),
+			y: random(20, 100),
+		});
 	}
 }
