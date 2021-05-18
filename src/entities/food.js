@@ -1,4 +1,4 @@
-import { Bodies, Body, Engine } from 'matter-js'
+import { Bodies, Body } from 'matter-js'
 
 import Entity from './entity.js';
 
@@ -13,13 +13,20 @@ export default class Food extends Entity {
 	}
 
 	getBody(options) {
-		return Bodies.circle(0, 0, 20);
+		const body = Bodies.circle(0, 0, 20, {
+			render: {
+				fillStyle: '#ffffff',
+				strokeStyle: '#aaaaaa',
+				lineWidth: 5,
+			}
+		});
+		return body;
 	}
 
 	respawn() {
 		Body.setPosition(this.body, {
-			x: random(0, 600),
-			y: random(20, 100),
+			x: random(100, 500),
+			y: random(100, 500),
 		});
 	}
 }

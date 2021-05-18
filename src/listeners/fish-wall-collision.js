@@ -8,19 +8,23 @@ export default function fishWallCollisionListener(e, simulation) {
 
 		if(a != null && b != null) {
 			var fish = null;
-			var wall = null;
+			//var wall = null;
 
 			if(a instanceof Fish && b instanceof FishTank) {
 				fish = a;
-				wall = b;
+				//wall = b;
 			}
 			else if(b instanceof Fish && a instanceof FishTank) {
 				fish = b;
-				wall = a;
+				//wall = a;
 			}
 			else return;
 
 			fish.crash();
+
+			if(fish.position.y > 550) {
+				fish.removeFrom();
+			}
 		}
 	}
 }

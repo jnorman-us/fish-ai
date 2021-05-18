@@ -12,7 +12,10 @@ export default class Normalizer {
 			normalized = Math.max(0, Math.min(1, normalized));
 		}
 		else {
-			// figure out how to get it to loop
+			while(normalized < 0)
+				normalized += 1;
+			while(normalized > 1)
+				normalized -= 1;
 		}
 		return normalized;
 	}

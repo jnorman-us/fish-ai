@@ -1,6 +1,5 @@
-import { Engine, Events, Render, Vector, World } from 'matter-js';
+import { Engine, Events, Render } from 'matter-js';
 
-import delay from './utils/delay.js';
 import random from './utils/random.js';
 
 import Fish from './entities/fish.js';
@@ -9,7 +8,7 @@ import Food from './entities/food.js';
 
 import fishFoodCollisionListener from './listeners/fish-food-collision.js';
 import fishWallCollisionListener from './listeners/fish-wall-collision.js';
-
+import foodWallCollisionListener from './listeners/food-wall-collision.js';
 
 export default class Simulation {
 	constructor() {
@@ -20,7 +19,7 @@ export default class Simulation {
 		this.fish_tank = new FishTank({
 			width: 600,
 			height: 600,
-			thickness: 10,
+			thickness: 30,
 			position: { x: 300, y: 300 },
 		});
 		this.fish_tank.addTo(this.world);
@@ -29,27 +28,33 @@ export default class Simulation {
 	}
 
 	async start() {
-		this.best_fish = new Fish({});
-		this.current_fish = new Fish({});
+		this.best_brain = Fish.generateBrain();
+		this.best_score = 0;
+		this.best_score_string = 0;
+		this.current_brain = Fish.generateBrain();
+		this.current_score = 0;
+		this.current_score_string = 0;
 
-		this.engine_runner = setInterval(this.tick.bind(this), 30);
+		this.engine_runner = setInterval(this.tick.bind(this), 40);
 
 		for(var gen = 0; true; gen ++) {
-			console.log(`Generation ${ gen }\n-----\nCurrent: ${ this.current_fish.score }\nBest: ${ this.best_fish.score}`);
+			console.log(`Generation ${ gen }\n-----\nCurrent: ${ this.current_score_string }\nBest: ${ this.best_score_string }`);
 
 			await this.generateGeneration();
-			await delay(7000);
+			await this.waitEpochEnd(); // wait for the food to hit the ground
 
-
-			this.current_fish = new Fish({});
+			this.current_score = 0;
 			for(const fish of this.fishes) {
-				if(fish.score > this.current_fish.score) {
-					this.current_fish = fish;
+				if(fish.score >= this.current_score) {
+					this.current_brain = fish.brain.copy();
+					this.current_score = fish.score;
+					this.current_score_string = fish.score_string;
 				}
-			}
-
-			if(this.current_fish.score > this.best_fish.score) {
-				this.best_fish = this.current_fish;
+				if(fish.score >= this.best_score) {
+					this.best_brain = fish.brain.copy();
+					this.best_score = fish.score;
+					this.best_score_string = fish.score_string;
+				}
 			}
 
 			this.destroyGeneration();
@@ -58,37 +63,45 @@ export default class Simulation {
 
 	async generateGeneration() {
 		// generate the food and the fish
+		this.food = null;
 		this.fishes = [];
-		this.foods = [];
 
-		for(var i = 0; i < 20; i ++) {
+		this.food = new Food({});
+		this.food.addTo(this.world);
+		this.food.respawn();
+
+		const mutation_rate = 1;
+		const num_fish = 25;
+
+		for(var i = 0; i < num_fish; i ++) {
 			var new_brain = null;
-			if(i == 0)
-				new_brain = this.best_fish.brain.copy();
-			if(i > 0)
-				new_brain = this.current_fish.brain.copy();
-			if(i > 1)
-				new_brain.mutate(1);
+			if(i < (num_fish - 2) * (7 / 8)) {
+				new_brain = this.current_brain.copy();
+				new_brain.mutate(mutation_rate);
+			}
+			else if(i == num_fish - 2) {
+				new_brain = this.best_brain.copy();
+			}
+			else if(i == num_fish - 1) {
+				new_brain = this.current_brain.copy();
+			}
+			else {
+				new_brain = this.best_brain.copy();
+				new_brain.mutate(mutation_rate);
+			}
 
 			const fish = new Fish({
 				position: {
 					x: random(0, 600),
-					y: random(200, 400),
+					y: random(200, 500),
 				},
 				angle: random(0, Math.PI * 2),
 				brain: new_brain,
 			});
 			fish.reset();
-			fish.setFoods(this.foods);
+			fish.setFood(this.food);
 			fish.addTo(this.world);
 			this.fishes.push(fish);
-		}
-
-		for(var i = 0; i < 1; i ++) {
-			const food = new Food({});
-			food.addTo(this.world);
-			food.respawn();
-			this.foods.push(food);
 		}
 	}
 
@@ -96,16 +109,33 @@ export default class Simulation {
 		for(const fish of this.fishes) {
 			fish.removeFrom();
 		}
-		for(const food of this.foods) {
-			food.removeFrom();
-		}
+		this.food.removeFrom();
+		this.food = null;
+	}
+
+	waitEpochEnd() {
+		var self = this;
+
+		return new Promise(function(resolve) {
+			self.endEpochResolve = resolve.bind(self);
+		});
+	}
+
+	endEpoch() {
+		if(this.endEpochResolve != null)
+			this.endEpochResolve();
 	}
 
 	tick() {
-		Engine.update(this.engine, 30);
+		for(const fish of this.fishes) {
+			fish.defyGravity(this.world.gravity);
+		}
+
+		Engine.update(this.engine, 50);
 
 		for(const fish of this.fishes) {
-			fish.tick();
+			if(fish.isInWorld)
+				fish.tick();
 		}
 	}
 
@@ -125,6 +155,7 @@ export default class Simulation {
 				wireframes: false,
 				width: width,
 				height: height,
+				background: '#6dd8db',
 			}
 		});
 
@@ -140,9 +171,15 @@ export default class Simulation {
 	}
 
 	registerListeners() {
+		var self = this;
+
 		Events.on(this.engine, "collisionStart", function(e) {
-			fishFoodCollisionListener(e, this);
-			fishWallCollisionListener(e, this);
+			fishFoodCollisionListener(e, self);
+			foodWallCollisionListener(e, self);
+		});
+
+		Events.on(this.engine, "collisionActive", function(e) {
+			fishWallCollisionListener(e, self);
 		});
 	}
 }

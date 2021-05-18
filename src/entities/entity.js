@@ -22,16 +22,20 @@ export default class Entity {
 		for(const part of this.body.parts) {
 			part.entity_ref = this;
 		}
+
+		this.isInWorld = false;
 	}
 
 	addTo(world) {
 		this.world = world;
 
 		World.add(this.world, this.body);
+		this.isInWorld = true;
 	}
 
 	removeFrom() {
 		World.remove(this.world, this.body);
+		this.isInWorld = false;
 	}
 
 	get position() {
