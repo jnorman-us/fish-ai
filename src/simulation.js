@@ -35,7 +35,7 @@ export default class Simulation {
 		this.current_score = 0;
 		this.current_score_string = 0;
 
-		this.engine_runner = setInterval(this.tick.bind(this), 40);
+		this.engine_runner = setInterval(this.tick.bind(this), 20);
 
 		for(var gen = 0; true; gen ++) {
 			console.log(`Generation ${ gen }\n-----\nCurrent: ${ this.current_score_string }\nBest: ${ this.best_score_string }`);
@@ -43,7 +43,7 @@ export default class Simulation {
 			await this.generateGeneration();
 			await this.waitEpochEnd(); // wait for the food to hit the ground
 
-			this.current_score = 0;
+			this.current_score = - 10000;
 			for(const fish of this.fishes) {
 				if(fish.score >= this.current_score) {
 					this.current_brain = fish.brain.copy();
@@ -70,12 +70,12 @@ export default class Simulation {
 		this.food.addTo(this.world);
 		this.food.respawn();
 
-		const mutation_rate = 1;
-		const num_fish = 25;
+		const mutation_rate = .5;
+		const num_fish = 6;
 
 		for(var i = 0; i < num_fish; i ++) {
 			var new_brain = null;
-			if(i < (num_fish - 2) * (7 / 8)) {
+			if(i < (num_fish - 2) * (1 / 2)) {
 				new_brain = this.current_brain.copy();
 				new_brain.mutate(mutation_rate);
 			}

@@ -26,7 +26,7 @@ export default class Food extends Entity {
 	respawn() {
 		Body.setPosition(this.body, {
 			x: random(100, 500),
-			y: random(100, 500),
+			y: random(50, 100),
 		});
 	}
 }

@@ -15,13 +15,13 @@ export default class Fish extends Entity {
 		options.collision_category = 0x0004;
 		super(options);
 
-		this.normalizer_a = new Normalizer(0, 2 * Math.PI, true);
+		//this.normalizer_a = new Normalizer(0, 2 * Math.PI, true);
 		this.normalizer_dcx = new Normalizer(-600, 600, false);
 		this.normalizer_dcy = new Normalizer(-600, 600, false);
 		this.normalizer_vx = new Normalizer(-4, 4, false);
 		this.normalizer_vy = new Normalizer(-4, 4, false);
-		this.expander_av = new Normalizer(-2, 2, false);
-		this.expander_f = new Normalizer(0, .7, true);
+		this.expander_a = new Normalizer(0, 2 * Math.PI, false);
+		this.expander_f = new Normalizer(0, .5, true);
 
 		if(options.brain != null)
 			this.brain = options.brain;
@@ -65,8 +65,8 @@ export default class Fish extends Entity {
 			this.graze();
 		}
 
-		const angle = this.body.angle;
-		const n_a = this.normalizer_a.normalize(angle);
+		//const angle = this.body.angle;
+		//const n_a = this.normalizer_a.normalize(angle);
 
 		const delta_v = Vector.sub(this.position, closest_food != null
 			? closest_food.position
@@ -78,15 +78,15 @@ export default class Fish extends Entity {
 		const n_vx = this.normalizer_vx.normalize(velocity.x);
 		const n_vy = this.normalizer_vy.normalize(velocity.y);
 
-		const outputs = this.brain.predictSync([ n_a, n_dx, n_dy, n_vx, n_vy ]);
+		const outputs = this.brain.predictSync([ n_dx, n_dy, n_vx, n_vy ]);
 
-		const angularVelocity = this.expander_av.expand(outputs[0].value);
+		const angle = this.expander_a.expand(outputs[0].value);
 		const force = this.expander_f.expand(outputs[1].value);
 
-		Body.setAngularVelocity(this.body, angularVelocity);
+		Body.setAngle(this.body, angle);
 		Body.applyForce(this.body, this.body.position, Vector.create(
-			force * Math.cos(this.body.angle + Math.PI),
-			force * Math.sin(this.body.angle + Math.PI),
+			force * Math.cos(angle + Math.PI),
+			force * Math.sin(angle + Math.PI),
 		));
 	}
 
@@ -138,7 +138,7 @@ export default class Fish extends Entity {
 		const brain = ML5.neuralNetwork({
 			task: 'regression',
 			noTraining: true,
-			inputs: 5, /*[
+			inputs: 4, /*[
 				'angle'
 				'delta_closest_x',
 				'delta_closest_y',
@@ -150,7 +150,7 @@ export default class Fish extends Entity {
 				'force',
 			]*/
 		});
-		brain.mutate(.1);
+		brain.mutate(1);
 		return brain;
 	}
 }
