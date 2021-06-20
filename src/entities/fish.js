@@ -11,8 +11,9 @@ export default class Fish extends Entity {
 	constructor(options) {
 		options.moveable = true;
 		options.mass = 100;
-		options.collision_mask = 0x0001 | 0x0002;
+		options.collision_mask = 0x0001;
 		options.collision_category = 0x0004;
+		options.color = options.color;
 		super(options);
 
 		//this.normalizer_a = new Normalizer(0, 2 * Math.PI, true);
@@ -20,15 +21,15 @@ export default class Fish extends Entity {
 		this.normalizer_dcy = new Normalizer(-600, 600, false);
 		this.normalizer_vx = new Normalizer(-4, 4, false);
 		this.normalizer_vy = new Normalizer(-4, 4, false);
-		this.expander_a = new Normalizer(0, 2 * Math.PI, false);
-		this.expander_f = new Normalizer(0, .5, true);
+		this.expander_a = new Normalizer(0, Math.PI * 2, false);
+		this.expander_f = new Normalizer(.2, .5, false);
 
 		if(options.brain != null)
 			this.brain = options.brain;
 		else
 			this.brain = Fish.generateBrain();
 
-		this.food = null;
+		this.food = options.food;
 		this.grazed = 0;
 		this.eaten = 0;
 		this.crashed = 0;
@@ -46,30 +47,18 @@ export default class Fish extends Entity {
 		this.eaten ++;
 	}
 
-	setFood(food) {
-		this.food = food;
-	}
-
 	tick() {
-		var closest_food = null;
+		const distance = Vector.magnitude(Vector.sub(this.food.position, this.position));
 
-		if(this.food != null)
-			closest_food = this.food;
-		const distance = Vector.magnitude(Vector.sub(closest_food.position, this.position));
-
-		if(distance < 40) {
-			this.eat();
-			closest_food.respawn();
-		}
-		else if(distance < 60) {
+		if(distance < 60) {
 			this.graze();
 		}
 
 		//const angle = this.body.angle;
 		//const n_a = this.normalizer_a.normalize(angle);
 
-		const delta_v = Vector.sub(this.position, closest_food != null
-			? closest_food.position
+		const delta_v = Vector.sub(this.position, this.food != null
+			? this.food.position
 			: Vector.create(300, 300));
 		const n_dx = this.normalizer_dcx.normalize(delta_v.x);
 		const n_dy = this.normalizer_dcy.normalize(delta_v.y);
@@ -91,32 +80,24 @@ export default class Fish extends Entity {
 	}
 
 	getBody(options) {
-		const colors = [
-			'#f52549', '#f96574', '#ffd54d', '#99be1b', '#00755e'
-		];
 		const render = {
-			fillStyle: colors[Math.floor(random(0, colors.length))],
+			fillStyle: options.color,
 			strokeStyle: 'white',
 			lineWidth: 4,
 		};
 
 		const body = Body.create({
 			parts: [
-				Bodies.circle(-10, 0, 15, {
+				Bodies.circle(-5, 0, 8, {
 					render: render,
 				}),
-				Bodies.polygon(10, 0, 3, 15, {
+				Bodies.polygon(10, 0, 3, 8, {
 					render: render,
 				}),
 			],
 		});
 
 		return body;
-	}
-
-	reset() {
-		this.eaten = 0;
-		this.crashed = 0;
 	}
 
 	defyGravity(gravity) {
@@ -127,7 +108,7 @@ export default class Fish extends Entity {
 	}
 
 	get score() {
-		return this.eaten * 200 + this.grazed * 3 - this.crashed * 40;
+		return this.eaten * 200 - this.crashed * 40;
 	}
 
 	get score_string() {
@@ -139,7 +120,6 @@ export default class Fish extends Entity {
 			task: 'regression',
 			noTraining: true,
 			inputs: 4, /*[
-				'angle'
 				'delta_closest_x',
 				'delta_closest_y',
 				'velocity_x',
@@ -150,7 +130,7 @@ export default class Fish extends Entity {
 				'force',
 			]*/
 		});
-		brain.mutate(1);
+		brain.mutate(0);
 		return brain;
 	}
 }

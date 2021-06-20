@@ -21,7 +21,23 @@ export default function foodWallCollisionListener(e, simulation) {
 			else return;
 
 			if(food.position.y > 550) {
-				simulation.endEpoch();
+				food.active = false;
+				food.removeFrom();
+
+				var still_going = false;
+				for(const { food } of simulation.pairs) {
+					console.log(food.active);
+					if(food.active) {
+						still_going = true;
+						break;
+					}
+				}
+
+				if(!still_going) {
+					simulation.endEpoch();
+				}
+
+				// simulation.endEpoch();
 			}
 		}
 	}

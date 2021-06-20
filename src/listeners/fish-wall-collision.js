@@ -21,10 +21,6 @@ export default function fishWallCollisionListener(e, simulation) {
 			else return;
 
 			fish.crash();
-
-			if(fish.position.y > 550) {
-				fish.removeFrom();
-			}
 		}
 	}
 }

@@ -16,6 +16,7 @@ export default class Entity {
 			this.body.collisionFilter.mask = options.collision_mask
 		this.body.frictionAir = .8;
 		this.body.collisionFilter.category = options.collision_category;
+		this.body.collisionFilter.group = options.collision_group;
 
 		this.body.entity_ref = this;
 

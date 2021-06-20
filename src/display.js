@@ -21,8 +21,8 @@ export default class Display extends React.Component {
 	}
 
 	handleResize() {
-		this.simulation.unmount();
-		this.simulation.mount(this.mount);
+		// this.simulation.unmount();
+		// this.simulation.mount(this.mount);
 	}
 
 	render() {
